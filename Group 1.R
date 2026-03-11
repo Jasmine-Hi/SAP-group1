@@ -59,7 +59,7 @@ model1 <- lm(Wt24 ~ Wt1, data = data)
 summary(model1)
 plot(model1)
 
-
+plot(resid(model1))
 
 
 
