@@ -1,0 +1,151 @@
+library(tidyverse)
+library(ggplot2)
+
+data <- read.csv("~/Desktop/学习/Statistic/大三下/Professional Skills/group work/project1-growth-wt.csv")
+
+### base stracture
+str(data)
+summary(data)
+head(data)
+colSums(is.na(data))
+
+data$Sex <- factor(data$Sex)
+
+str(data)
+table(data$Sex)
+prop.table(table(data$Sex))
+
+
+### Wt1 分布
+ggplot(data, aes(x = Wt1)) +
+  geom_histogram(bins = 15, color = "black", fill = "lightblue") +
+  labs(
+    title = "Distribution of Weight at 1 Month",
+    x = "Wt1 (kg)",
+    y = "Count"
+  )
+
+### Wt24 分布
+ggplot(data, aes(x = Wt24)) +
+  geom_histogram(bins = 15, color = "black", fill = "lightgreen") +
+  labs(
+    title = "Distribution of Weight at 24 Months",
+    x = "Wt24 (kg)",
+    y = "Count"
+  )
+
+### Solids 分布
+ggplot(data, aes(x = Solids)) +
+  geom_histogram(bins = 15, color = "black", fill = "orange") +
+  labs(
+    title = "Distribution of Age at Introduction of Solids",
+    x = "Solids (months)",
+    y = "Count"
+  )
+
+### 散点图
+ggplot(data, aes(x = Wt1, y = Wt24)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Relationship between Weight at 1 Month and Weight at 24 Months",
+    x = "Wt1 (kg)",
+    y = "Wt24 (kg)"
+  )
+
+
+model1 <- lm(Wt24 ~ Wt1, data = data)
+
+summary(model1)
+plot(model1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
