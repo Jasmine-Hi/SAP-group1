@@ -56,8 +56,10 @@ ggplot(data, aes(x = Wt1, y = Wt24)) +
 
 model1 <- lm(Wt24 ~ Wt1, data = data)
 
+
 summary(model1)
 plot(model1)
+
 
 
 
