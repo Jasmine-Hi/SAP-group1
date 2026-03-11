@@ -1,7 +1,11 @@
+install.packages("tidyverse")
+install.packages("ggplot2")
+
 library(tidyverse)
 library(ggplot2)
 
-data <- read.csv("~/Desktop/学习/Statistic/大三下/Professional Skills/group work/project1-growth-wt.csv")
+#data <- read.csv("C:\Users\irene\OneDrive\Documents\Irene UofG\SAP-group1\project1-growth-wt.csv")
+data <- read.csv("C:/Users/irene/OneDrive/Documents/Irene UofG/SAP-group1/project1-growth-wt.csv")
 
 ### base stracture
 str(data)
@@ -60,92 +64,14 @@ summary(model1)
 plot(model1)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Secondary objectives
+#a)
+#i)
+weight_sex_model <- lm(Wt24 ~ Wt1+Sex, data= data)
+summary(weight_sex_model)
+#ii)
+weight_age_model <- lm(Wt24 ~ Wt1+Solids, data= data)
+summary(weight_age_model)
+#iii)
+weight_comb_model <- lm(Wt24 ~ Wt1 + Sex + Solids, data = data)
+summary(weight_comb_model)
