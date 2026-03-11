@@ -1,7 +1,7 @@
 library(tidyverse)
 library(ggplot2)
 
-data <- read.csv("~/Desktop/学习/Statistic/大三下/Professional Skills/group work/project1-growth-wt.csv")
+data <- read.csv("project1-growth-wt.csv")
 
 ### base stracture
 str(data)
