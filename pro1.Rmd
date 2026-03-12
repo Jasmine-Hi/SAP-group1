@@ -1,0 +1,126 @@
+---
+title: "pro1"
+output:
+  html_document:
+    df_print: paged
+date: "2026-03-06"
+---
+
+# 1- Introduction
+
+### Project Background
+
+This report investigates the nutritional status and growth of a sample of 113 infants born at the Queen Mother’s Hospital, Glasgow. The study tracks physical development from 1 month to 24 months of age, examining how early weight and environmental factors like the introduction of solid foods relate to later physical outcomes. \### Questions of Interest Guessing Weight: Can we accurately guess a baby's weight at 24 months if we only know their weight at 1 month?
+
+Making the Guess Better: If we also know the baby's Sex and the age they started solid foods, does our guess get more accurate?
+
+Boys vs. Girls: Do boy babies and girl babies gain a different amount of weight on average during their first two years?
+
+```{r include=FALSE,echo=FALSE ,warning=FALSE,message=FALSE}
+# This is a code chunk. Load your libraries here.
+library(tidyverse)
+library(dplyr)
+library(gridExtra)
+data <- read.csv("project1-growth-wt.csv")
+```
+
+# 2-Exploratory Data Analysis
+
+### Exploratory Tables
+
+```{r  echo=FALSE,warning=FALSE ,message=FALSE}
+# Create a summary table
+summary_table <- data %>%
+  group_by(Sex) %>%
+  summarise(
+    Count = n(),
+    Mean_Wt1 = mean(Wt1),
+    SD_Wt1 = sd(Wt1),
+    Mean_Wt24 = mean(Wt24),
+    SD_Wt24 = sd(Wt24),
+    Mean_Solids = mean(Solids)
+  )
+
+knitr::kable(summary_table, caption = "Summary Statistics by Sex")
+```
+
+Comments on Table: Weight Advantage: Male babies start heavier at 1 month (Avg 4.51kg vs 4.11kg) and maintain a higher average weight at 24 months.
+
+Solids Consistency: The average age for starting solid foods is nearly identical for both sexes (approx. 11.5 months), suggesting that feeding choices in this sample were not influenced by the baby's sex. \### Exploratory Plots Visualising the data helps us check if a linear model is appropriate and if there are any outliers.
+
+```{r  echo=FALSE,warning=FALSE,message=FALSE,fig.height=5, fig.width=10}
+# Scatterplot for Primary Objective
+p1 <- ggplot(data, aes(x=Wt1, y=Wt24)) +
+  geom_point(alpha=0.6) +
+  geom_smooth(method="lm", color="blue") +
+  labs(title="Primary Objective: Wt24 vs Wt1", x="Weight at 1 Month (kg)", y="Weight at 24 Months (kg)") +
+  theme_minimal()
+
+# Boxplot for Growth Difference
+data$Wt_Diff <- data$Wt24 - data$Wt1
+p2 <- ggplot(data, aes(x=Sex, y=Wt_Diff, fill=Sex)) +
+  geom_boxplot() +
+  labs(title="Weight Gain by Sex", y="Weight Change (kg)") +
+  theme_minimal()
+
+grid.arrange(p1, p2, ncol=2)
+```
+
+Comments on Plots: Linear Relationship: The first plot shows a clear positive linear trend. The data points follow the regression line closely, which justifies the use of Simple Linear Regression. Outliers: There are a few babies with high 24-month weights (above 15kg) relative to their 1-month weight, but no extreme outliers that would severely bias the results. The second plot shows Plot Weight Difference. The boxplot clearly shows that the median weight gain for boys is higher than for girls. This suggests that weight gain depends on sex, which we will test formally in the next section. This will be confirmed in our Multiple Regression model.
+
+### Description of Methods to be Used
+
+A. Simple Linear Regression (For Question 1) We will use this to model the direct relationship between $Wt1$ and $Wt24$. We look at the $R^2$ value to determine how much of the weight is told by their weight as a 1-month-old.
+
+B. Multiple Linear Regression (For Question 2) To see if we can improve our guess, we will add "Sex" and "Solids" as extra predictors. This allows us to see the partial effect of each variable—for example, how much weight gain is due to being a boy after we account for how much they weighed at month 1.
+
+C. Two-Sample T-Test (For Question 3) To compare the growth difference ($Wt24 - Wt1$) between boys and girls, we use a T-test. This method is used to determine if the difference in the means of two groups is statistically significant.
+
+# 3- Statistical Modelling and Results
+
+###Predicting Weight at 24 Months 
+To determine if weight at 1 month ($Wt1$) is a reliable predictor for weight at 24 months ($Wt24$), a Simple Linear Regression model was fitted.
+
+$$
+Wt24_i=\beta_{0} +\beta_{1}Wt1_i+\epsilon_i  where \space \epsilon_i \space  ∼ N(0,σ^2)
+$$
+
+$Wt24_i$:Weight at 24 months (kg)for the $i$th baby.
+
+$Wt1_i$ : Weight at 1 months(kg)for the $i$th baby.
+
+```{r echo=FALSE,warning=FALSE,message=FALSE}
+model1 <- lm(Wt24 ~ Wt1, data = data)
+summary_m1 <- summary(model1)
+summary_m1
+
+```
+
+Results: The model is statistically significant p \< 0.001. The adjusted $R^2$ value is 0.419, which indicates that weight at 1 month explains approximately 41.9% of the variation in weight at 24 months. For every 1 kg increase in a baby's weight at 1 month, the model predicts an average increase of 1.80 kg at 24 months. This suggests that early infancy weight is a valid predictor of (24 months) weight.
+
+### Question 3: Does the average weight gain differ between Boys and Girls?
+
+To answer this question, we first calculated the total weight gain for each baby ($Weight\ at\ 24\ months\ minus\ Weight\ at\ 1\ month$). We then used a Two-Sample T-test to compare the average growth of boys and girls.
+
+```{r echo=FALSE,warning=FALSE,message=FALSE}
+data$Wt_Diff <- data$Wt24 - data$Wt1
+t_test_results <- t.test(Wt_Diff ~ Sex, data = data)
+t_test_results
+```
+
+Results and Interpretation:
+
+-   Average gain for Boys is 8.608
+
+-   Average gain for Girls is 7.823
+
+-   The p-value is 0.001
+
+  The p-value is 0.001, which is much smaller than 0.05. In statistics, this means the result is highly significant.
+
+  There is a very strong evidence that weight gain during the first two years of life is not the same for both sexes because the p-value is 0.001\<0.05 and we have the 95 CI [-1.2534,-0.3160] does not include zero this mean the  mean for boys does not equal the mean of girls.
+
+$u_{male} \neq u_{femal}$
+
+
+On average,boys in this study gained about 0.79 kg more than girls. This confirms that the sex of a baby is a very important factor when studying how they grow.
