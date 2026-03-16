@@ -76,3 +76,27 @@ summary(weight_age_model)
 #iii)
 weight_comb_model <- lm(Wt24 ~ Wt1 + Sex + Solids, data = data)
 summary(weight_comb_model)
+
+### Question 3
+
+Question 3: Does the average weight gain differ between Boys and Girls?
+
+To answer this question, we first calculated the total weight gain for each baby ($Weight\ at\ 24\ months\ minus\ Weight\ at\ 1\ month$). We then used a Two-Sample T-test to compare the average growth of boys and girls.
+
+```{r echo=FALSE,warning=FALSE,message=FALSE}
+data$Wt_Diff <- data$Wt24 - data$Wt1
+t_test_results <- t.test(Wt_Diff ~ Sex, data = data)
+t_test_results
+```
+
+Results and Interpretation:
+
+-   Average gain for Boys is 8.608
+
+-   Average gain for Girls is 7.823
+
+-   The p-value is 0.001
+
+  The p-value is 0.001, which is much smaller than 0.05. In statistics, this means the result is highly significant.
+
+  There is a very strong evidence that weight gain during the first two years of life is not the same for both sexes because the p-value is 0.001\<0.05 and we have the 95 CI [-1.2534,-0.3160] does not include zero this mean the  mean for boys does not equal the mean of girls.
