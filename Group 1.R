@@ -65,7 +65,7 @@ summary(model1)
 plot(model1)
 plot(resid(model1))
 
-# Secondary objectives
+# Question 2
 #a)
 #i)
 weight_sex_model <- lm(Wt24 ~ Wt1+Sex, data= data)
@@ -76,6 +76,10 @@ summary(weight_age_model)
 #iii)
 weight_comb_model <- lm(Wt24 ~ Wt1 + Sex + Solids, data = data)
 summary(weight_comb_model)
+res <- residuals(weight_comb_model)
+
+qqnorm(res)
+qqline(res, col = "red", lwd = 2)
 
 ### Question 3
 
