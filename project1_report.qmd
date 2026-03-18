@@ -1,0 +1,311 @@
+---
+title: "Project 1: Nutrition and Weight"
+subtitle: "Exploratory Data Analysis and Statistical Inference"
+author: ""
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    theme: cosmo
+    embed-resources: true
+    code-fold: true
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+data <- read.csv("project1-growth-wt.csv")
+data$Sex <- factor(data$Sex)
+data$Wt_Diff <- data$Wt24 - data$Wt1
+```
+
+---
+
+# 1  Data Overview
+
+The dataset records nutritional and growth information on babies born at the Queen Mother's Hospital, Glasgow. After loading, we check the structure, missing values, and basic distributions before proceeding to modelling.
+
+```{r data-check}
+str(data)
+colSums(is.na(data))
+summary(data)
+```
+
+**Key observations:**
+
+- The CSV contains **113 complete observations** (the study description states 127; 14 records appear absent from this file).
+- **Sex** is a binary factor: 64 males (56.6%) and 49 females (43.4%).
+- **Wt1** ranges from 3.14 to 5.94 kg (mean 4.34 kg); **Wt24** from 8.46 to 17.90 kg (mean 12.61 kg).
+- **Solids** ranges from 4 to 22 months (mean 11.5 months), right-skewed with a cluster around 11–13 months.
+- No missing values are present.
+
+```{r sex-table}
+tbl <- data.frame(
+  Sex        = c("Female", "Male"),
+  N          = as.integer(table(data$Sex)),
+  Proportion = round(prop.table(table(data$Sex)), 3)
+)
+knitr::kable(tbl, caption = "Table 1. Sex distribution in the sample.")
+```
+
+---
+
+## 1.1  Univariate Distributions
+
+```{r hist-wt1, fig.cap="Figure 1. Distribution of weight at 1 month."}
+ggplot(data, aes(x = Wt1)) +
+  geom_histogram(bins = 15, colour = "white", fill = "#87CEEB") +
+  labs(title = "Distribution of Weight at 1 Month",
+       x = "Wt1 (kg)", y = "Count") +
+  theme_classic(base_size = 13)
+```
+
+```{r hist-wt24, fig.cap="Figure 2. Distribution of weight at 24 months."}
+ggplot(data, aes(x = Wt24)) +
+  geom_histogram(bins = 15, colour = "white", fill = "#90EE90") +
+  labs(title = "Distribution of Weight at 24 Months",
+       x = "Wt24 (kg)", y = "Count") +
+  theme_classic(base_size = 13)
+```
+
+```{r hist-solids, fig.cap="Figure 3. Distribution of age at introduction to solids."}
+ggplot(data, aes(x = Solids)) +
+  geom_histogram(bins = 15, colour = "white", fill = "#FFA07A") +
+  labs(title = "Distribution of Age at Introduction to Solids",
+       x = "Solids (months)", y = "Count") +
+  theme_classic(base_size = 13)
+```
+
+**Interpretation:**  
+Both **Wt1** (Figure 1) and **Wt24** (Figure 2) are approximately normally distributed and unimodal — a good sign for the linear regression assumptions ahead. **Solids** (Figure 3) is strongly left-skewed, with the large majority of babies introduced to solids between 8 and 16 months; a long left tail extends back to 4 months. 
+
+---
+
+## 1.2  Relationship between Wt1 and Wt24
+
+```{r scatter, fig.cap="Figure 4. Scatterplot of Wt1 vs Wt24 with OLS regression line."}
+ggplot(data, aes(x = Wt1, y = Wt24)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue") +
+  labs(title = "Weight at 1 Month vs Weight at 24 Months",
+       x = "Wt1 (kg)", y = "Wt24 (kg)") +
+  theme_classic(base_size = 13)
+```
+
+Figure 4 shows a clear **positive linear association** between Wt1 and Wt24. Heavier babies at 1 month tend to be heavier at 24 months, though the scatter around the line is considerable, indicating that Wt1 alone does not explain all the variation.
+
+---
+
+# 2  Question 1 — Simple Linear Regression
+
+> *How well can weight at 24 months be predicted using weight at 1 month alone?*
+
+## 2.1  Model Fitting
+
+```{r model1}
+model1 <- lm(Wt24 ~ Wt1, data = data)
+summary(model1)
+```
+
+**Model equation:**
+
+$$\widehat{\text{Wt24}} = 4.816 + 1.796 \times \text{Wt1}$$
+
+- **R² = 0.419** — Wt1 explains approximately 42% of the variability in Wt24.
+- **Adjusted R² = 0.414**
+- The slope is statistically significant (*p* < 0.001): each additional kilogram of weight at 1 month is associated with an expected increase of **1.80 kg** at 24 months.
+
+## 2.2  Diagnostic Plots
+
+```{r model1-diag, fig.cap="Figure 5. Regression diagnostics for model 1 (Wt24 ~ Wt1).", fig.width=9, fig.height=7}
+par(mfrow = c(2, 2))
+plot(model1)
+par(mfrow = c(1, 1))
+```
+
+**Interpretation of diagnostics:**  
+
+- **Residuals vs Fitted:** Points are scattered roughly horizontally around zero with no obvious curvature, supporting the linearity assumption.  
+- **Normal Q-Q:** Residuals lie closely along the reference line except for a couple of points in the upper tail (e.g., observation 99 with an unusually high Wt24 of 17.9 kg). Overall normality is reasonable.  
+- **Scale-Location:** The spread of residuals is broadly constant across fitted values, consistent with homoscedasticity.  
+- **Residuals vs Leverage:** No observation exerts unduly high leverage or has a Cook's distance close to 1; the model is not driven by outliers.
+
+## 2.3  Conclusion — Q1
+
+The simple linear regression of Wt24 on Wt1 is statistically significant and provides a **moderate fit (R² ≈ 0.42)**. While weight at 1 month is a useful predictor of weight at 24 months, roughly 58% of the variation remains unexplained, motivating the inclusion of additional variables in Q2.
+
+---
+
+# 3  Question 2 — Multiple Linear Regression
+
+> *Would the model be improved by adding Sex and/or age at introduction to solids?*
+
+We fit three extended models and compare them to Model 1 via F-tests (ANOVA) and AIC.
+
+## 3.1  Model Fitting
+
+```{r models-q2}
+weight_sex_model  <- lm(Wt24 ~ Wt1 + Sex,           data = data)
+weight_age_model  <- lm(Wt24 ~ Wt1 + Solids,        data = data)
+weight_comb_model <- lm(Wt24 ~ Wt1 + Sex + Solids,  data = data)
+
+summary(weight_sex_model)
+summary(weight_age_model)
+summary(weight_comb_model)
+```
+
+## 3.2  Model Comparison
+
+```{r model-comparison}
+aic_tbl <- AIC(model1, weight_sex_model, weight_age_model, weight_comb_model)
+aic_tbl$Model <- c("Wt24 ~ Wt1",
+                   "Wt24 ~ Wt1 + Sex",
+                   "Wt24 ~ Wt1 + Solids",
+                   "Wt24 ~ Wt1 + Sex + Solids")
+aic_tbl$R2     <- c(summary(model1)$r.squared,
+                    summary(weight_sex_model)$r.squared,
+                    summary(weight_age_model)$r.squared,
+                    summary(weight_comb_model)$r.squared) |> round(4)
+aic_tbl$AdjR2  <- c(summary(model1)$adj.r.squared,
+                    summary(weight_sex_model)$adj.r.squared,
+                    summary(weight_age_model)$adj.r.squared,
+                    summary(weight_comb_model)$adj.r.squared) |> round(4)
+
+knitr::kable(
+  aic_tbl[, c("Model", "df", "AIC", "R2", "AdjR2")],
+  caption = "Table 2. Model comparison by AIC, R², and Adjusted R².",
+  col.names = c("Model", "df", "AIC", "R²", "Adj R²")
+)
+```
+
+```{r anova-tests}
+cat("--- F-test: adding Sex ---\n");    print(anova(model1, weight_sex_model))
+cat("\n--- F-test: adding Solids ---\n"); print(anova(model1, weight_age_model))
+cat("\n--- F-test: adding Sex + Solids ---\n"); print(anova(model1, weight_comb_model))
+```
+
+**Summary of model comparison:**
+
+| Model | R² | Adj R² | AIC | F-test *p* vs M1 |
+|---|---|---|---|---|
+| Wt24 ~ Wt1 | 0.419 | 0.414 | 364.2 | — |
+| Wt24 ~ Wt1 + Sex | **0.444** | **0.434** | **361.2** | **0.028** |
+| Wt24 ~ Wt1 + Solids | 0.426 | 0.416 | 364.7 | 0.238 |
+| Wt24 ~ Wt1 + Sex + Solids | 0.454 | 0.439 | 361.2 | 0.035 |
+
+- **Adding Sex** significantly improves the model (F-test *p* = 0.028; AIC drops by 3 points). The Sex coefficient is 0.534 (*p* = 0.028), meaning male babies are predicted to weigh about **0.53 kg more** at 24 months, after accounting for Wt1.  
+- **Adding Solids alone** does not improve the model (F-test *p* = 0.238; Solids coefficient *p* = 0.238; AIC actually increases slightly). There is no evidence that the age at introduction to solids is a useful predictor once Wt1 is included.  
+- **Adding both** Sex and Solids marginally improves R² but Solids remains non-significant (*p* = 0.172). The AIC (361.2) is essentially the same as the Wt1 + Sex model, offering no advantage for the extra parameter.
+
+## 3.3  Best Model Diagnostics
+
+The **Wt24 ~ Wt1 + Sex** model is selected as the best model: it has the lowest AIC, the highest adjusted R², and only retains significant predictors.
+
+```{r best-model-diag, fig.cap="Figure 6. Diagnostics for the best model (Wt24 ~ Wt1 + Sex).", fig.width=9, fig.height=7}
+par(mfrow = c(2, 2))
+plot(weight_sex_model)
+par(mfrow = c(1, 1))
+```
+
+The diagnostic plots confirm that the residuals are approximately normal, show no systematic pattern against fitted values, and exhibit constant variance — all assumptions of OLS regression are reasonably satisfied.
+
+## 3.4  Conclusion — Q2
+
+Adding **Sex** to the simple model provides a statistically significant and practically meaningful improvement: adjusted R² rises from 0.414 to 0.434 and AIC falls by ~3 units. **Solids**, by contrast, contributes no significant improvement and should be excluded to maintain parsimony. The recommended model is:
+
+$$\widehat{\text{Wt24}} = 5.226 + 1.632 \times \text{Wt1} + 0.534 \times \mathbf{1}[\text{Sex = Male}]$$
+
+---
+
+# 4  Question 3 — Difference in Weight Gain by Sex
+
+> *What evidence is there that the average change in weight from 1 to 24 months differs between male and female babies?*
+
+## 4.1  Exploratory Analysis
+
+We define weight gain as $\Delta W = \text{Wt24} - \text{Wt1}$ and compare its distribution between sexes.
+
+```{r q3-summary}
+q3_tbl <- data |>
+  group_by(Sex) |>
+  summarise(
+    N      = n(),
+    Mean   = round(mean(Wt_Diff), 3),
+    SD     = round(sd(Wt_Diff), 3),
+    Median = round(median(Wt_Diff), 3),
+    Min    = round(min(Wt_Diff), 2),
+    Max    = round(max(Wt_Diff), 2)
+  )
+
+knitr::kable(q3_tbl,
+  caption  = "Table 3. Summary statistics of weight gain (kg) by sex.",
+  col.names = c("Sex", "N", "Mean (kg)", "SD (kg)", "Median (kg)", "Min (kg)", "Max (kg)"))
+```
+
+Male babies gained on average **8.609 kg** compared to **7.824 kg** for females — a raw difference of **0.785 kg**. Males also show slightly less spread (SD = 1.150) than females (SD = 1.311).
+
+```{r q3-boxplot, fig.cap="Figure 7. Boxplot of weight gain by sex."}
+ggplot(data, aes(x = Sex, y = Wt_Diff, fill = Sex)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = 16, outlier.size = 2) +
+  scale_fill_manual(values = c("Female" = "#F4A9A8", "Male" = "#87CEEB")) +
+  labs(title = "Weight Gain from 1 to 24 Months by Sex",
+       x = "Sex", y = "Weight Gain (kg)",
+       caption = "Figure 7. The median and IQR are both higher for males.") +
+  theme_classic(base_size = 13) +
+  theme(legend.position = "none")
+```
+
+```{r q3-density, fig.cap="Figure 8. Density curves of weight gain by sex, with dashed mean lines."}
+mean_df <- data |> group_by(Sex) |> summarise(m = mean(Wt_Diff))
+
+ggplot(data, aes(x = Wt_Diff, colour = Sex, fill = Sex)) +
+  geom_density(alpha = 0.25, linewidth = 1) +
+  geom_vline(data = mean_df, aes(xintercept = m, colour = Sex),
+             linetype = "dashed", linewidth = 1) +
+  scale_fill_manual(values   = c("Female" = "#F4A9A8", "Male" = "#87CEEB")) +
+  scale_colour_manual(values = c("Female" = "#D9534F", "Male" = "#2176AE")) +
+  labs(title = "Density of Weight Gain by Sex",
+       x = "Weight Gain (kg)", y = "Density") +
+  theme_classic(base_size = 13)
+```
+
+**Interpretation of Figures 7 & 8:**  
+The boxplot (Figure 7) shows that the male distribution is shifted upward: both the median (≈ 8.48 kg) and the interquartile range sit higher than those of females (median ≈ 7.70 kg). There are no extreme outliers that would distort the analysis. The density plot (Figure 8) reinforces this: the male curve (blue) is displaced to the right of the female curve (red), and the dashed mean lines clearly illustrate the ~0.785 kg gap. Both distributions are approximately bell-shaped, supporting the use of a t-test.
+
+## 4.2  Formal Hypothesis Test
+
+We use a **Welch Two-Sample *t*-test**, which does not assume equal variances — appropriate here given the modest difference in standard deviations and unequal group sizes (n = 64 males, 49 females).
+
+**Hypotheses:**
+
+$$H_0: \mu_{\text{Male}} = \mu_{\text{Female}} \qquad \text{(no difference in mean weight gain)}$$
+
+$$H_1: \mu_{\text{Male}} \neq \mu_{\text{Female}} \qquad \text{(two-sided)}$$
+
+```{r q3-ttest}
+t_test_results <- t.test(Wt_Diff ~ Sex, data = data)
+t_test_results
+```
+
+## 4.3  Conclusion — Q3
+
+The Welch Two-Sample *t*-test yields **t(95.89) = −3.32, p = 0.0013**.
+
+Since *p* = 0.0013 < 0.05, we **reject the null hypothesis**. There is strong statistical evidence that the average weight gain from 1 to 24 months is **not equal** for male and female babies.
+
+The 95% confidence interval for the difference (Female − Male) is **[−1.253, −0.316] kg**. Because the entire interval lies below zero, we can conclude with 95% confidence that males gain **more** weight than females. The estimated difference is approximately **0.785 kg** — modest in absolute terms but statistically robust. This finding aligns with the result from Q2, where Sex was identified as a significant predictor of Wt24 even after controlling for Wt1.
+
+---
+
+# 5  Overall Summary
+
+| Question | Key Finding |
+|---|---|
+| **Q1** | Wt1 is a significant but moderate predictor of Wt24 (R² = 0.42). A 1 kg increase in Wt1 predicts a 1.80 kg increase in Wt24. |
+| **Q2** | Adding **Sex** significantly improves the model (AIC ↓ 3, adj. R² ↑ to 0.434, *p* = 0.028). Adding **Solids** adds no improvement (*p* = 0.238). Best model: Wt24 ~ Wt1 + Sex. |
+| **Q3** | Male babies gain on average **0.785 kg more** than female babies (*t* = −3.32, *p* = 0.0013, 95% CI [0.316, 1.253] kg). The difference is statistically significant. |
