@@ -46,11 +46,31 @@ summary(weight_sex_model)
 summary(weight_age_model)
 summary(weight_comb_model)
 
-AIC(model1, weight_sex_model, weight_age_model, weight_comb_model)
+# model assumption checking
+#QQ plot
+res <- residuals(weight_comb_model)
 
-anova(model1, weight_sex_model)
-anova(model1, weight_age_model)
-anova(model1, weight_comb_model)
+qqnorm(res)
+qqline(res, col = "red", lwd = 2)
+
+#Residual vs Fitted Model
+
+df <- data.frame(
+  fitted = fitted(weight_comb_model),
+  residuals = residuals(weight_comb_model)
+)
+
+ggplot(df, aes(x = fitted, y = residuals)) +
+  geom_point(alpha = 0.7) +
+  geom_hline(yintercept = 0, colour = "red", linewidth = 1) +
+  labs(
+    title = "Residuals vs Fitted Values",
+    x = "Fitted Values",
+    y = "Residuals"
+  ) +
+  theme_minimal()
+
+AIC(model1, weight_sex_model, weight_age_model, weight_comb_model)
 
 plot(weight_comb_model)
 
