@@ -3,17 +3,20 @@ title: "Project 1: Nutrition and Weight"
 subtitle: "Exploratory Data Analysis and Statistical Inference"
 author: ""
 date: today
-format:
-  html:
-    toc: true
-    toc-depth: 3
-    toc-title: "Contents"
-    theme: cosmo
-    embed-resources: true
-    code-fold: true
-execute:
+execute: 
+  echo: false
+  eval: true
   warning: false
   message: false
+format:
+  pdf:
+    pfd-engine: xelatex
+    toc: true
+    number-sections: true
+    colorlinks: true
+editor:
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
