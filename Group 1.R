@@ -1,11 +1,8 @@
-install.packages("tidyverse")
-install.packages("ggplot2")
-
 library(tidyverse)
 library(ggplot2)
 
 #data <- read.csv("C:\Users\irene\OneDrive\Documents\Irene UofG\SAP-group1\project1-growth-wt.csv")
-data <- read.csv("C:/Users/irene/OneDrive/Documents/Irene UofG/SAP-group1/project1-growth-wt.csv")
+data <- read.csv("project1-growth-wt.csv")
 
 ### base stracture
 str(data)
@@ -78,8 +75,20 @@ weight_comb_model <- lm(Wt24 ~ Wt1 + Sex + Solids, data = data)
 summary(weight_comb_model)
 res <- residuals(weight_comb_model)
 
+## I suggest adding
+model1 <- lm(Wt24 ~ Wt1, data = data)
+AIC(model1, weight_sex_model, weight_age_model, weight_comb_model)
+
+anova(model1, weight_sex_model)
+anova(model1, weight_age_model)
+anova(model1, weight_comb_model)
+
 qqnorm(res)
 qqline(res, col = "red", lwd = 2)
+plot(weight_comb_model)
+
+
+
 
 ### Question 3
 
