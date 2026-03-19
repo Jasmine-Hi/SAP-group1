@@ -1,0 +1,240 @@
+---
+title: "Project 1: Nutrition and Weight"
+format: html
+editor: visual
+---
+
+## **Introduction:** 
+
+A study at Queen Mother's Hospital Glasgow investigated the nutritional status of babies when they were born and during their infancy. A representative sample of 127 babies was taken. The variables considered were: 
+
+-   Sex -- Male/Female - Binary 
+-   Wt1 -- Weight at 1 month (kg) - Continuous 
+-   Wt24 -- Weight at 24 months (kg) - Continuous 
+-   Solids -- Age (month) when introduced to solid food -- Discrete 
+
+This report investigates three questions: 
+
+-   How well can weight at 24 months be predicted using a linear model and weight at 1 month as the only explanatory variable? 
+-   Would the above model be improved by adding sex or solids as explanatory variables? 
+-   Is there a difference in the average change in weight from 1 month to 24 months between male and female babies? 
+
+## Exploratory Analysis:
+
+First we looks at some key observations:
+
+```{r}
+#| echo: false
+#| warning: false
+library(tidyverse)
+```
+
+```{r}
+#| echo: false
+#| warning: true
+data <- read.csv("project1-growth-wt.csv")
+data$Sex <- factor(data$Sex)
+
+str(data)
+colSums(is.na(data))
+summary(data)
+```
+
+The CSV contains **113 complete observations** (the study description states 127; 14 records appear absent from this file).
+
+\- **Sex** is a binary factor: 64 males (56.6%) and 49 females (43.4%).
+
+-   **Wt1** ranges from 3.14 to 5.94 kg (mean 4.34 kg); **Wt24** from 8.46 to 17.90 kg (mean 12.61 kg).
+
+\- **Solids** ranges from 4 to 22 months (mean 11.5 months), right-skewed with a cluster around 11--13 months.
+
+\- No missing values are present.
+
+Below is a table showing the proportions of the sex variable. There are more males than females.
+
+```{r sex-table}
+#| echo: false
+#| warning: false
+tbl <- data.frame(
+  Sex        = c("Female", "Male"),
+  N          = as.integer(table(data$Sex)),
+  Proportion = round(prop.table(table(data$Sex)), 3)
+)
+knitr::kable(tbl, caption = "Table 1. Sex distribution in the sample.")
+
+```
+
+Now we look at histograms of the variables:
+
+```{r hist-wt1, fig.cap="Figure 1. Distribution of weight at 1 month."}
+#| echo: false
+ggplot(data, aes(x = Wt1)) +
+  geom_histogram(bins = 15, colour = "white", fill = "#87CEEB") +
+  labs(title = "Distribution of Weight at 1 Month",
+       x = "Wt1 (kg)", y = "Count") +
+  theme_classic(base_size = 13)
+```
+
+```{r hist-wt24, fig.cap="Figure 2. Distribution of weight at 24 months."}
+#| echo: false
+ggplot(data, aes(x = Wt24)) +
+  geom_histogram(bins = 15, colour = "white", fill = "#90EE90") +
+  labs(title = "Distribution of Weight at 24 Months",
+       x = "Wt24 (kg)", y = "Count") +
+  theme_classic(base_size = 13)
+```
+
+```{r hist-solids, fig.cap="Figure 3. Distribution of age at introduction to solids."}
+#| echo: false
+ggplot(data, aes(x = Solids)) +
+  geom_histogram(bins = 15, colour = "white", fill = "#FFA07A") +
+  labs(title = "Distribution of Age at Introduction to Solids",
+       x = "Solids (months)", y = "Count") +
+  theme_classic(base_size = 13)
+```
+
+Both **Wt1** (Figure 1) and **Wt24** (Figure 2) are approximately normally distributed and unimodal --- a good sign for the linear regression assumptions ahead. **Solids** (Figure 3) is strongly left-skewed, with the large majority of babies introduced to solids between 8 and 16 months; a long left tail extends back to 4 months.
+
+Now we investigate the relationship between Wt1 and Wt24:
+
+```{r scatter, fig.cap="Figure 4. Scatterplot of Wt1 vs Wt24 with OLS regression line."}
+#| echo: false
+ggplot(data, aes(x = Wt1, y = Wt24)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue") +
+  labs(title = "Weight at 1 Month vs Weight at 24 Months",
+       x = "Wt1 (kg)", y = "Wt24 (kg)") +
+  theme_classic(base_size = 13)
+```
+
+Figure 4 shows a clear **positive linear association** between Wt1 and Wt24. Heavier babies at 1 month tend to be heavier at 24 months, though the scatter around the line is considerable, indicating that Wt1 alone does not explain all the variation.
+
+## **Statistical Analysis:** 
+
+First, we create a linear model with Wt24 as the response and Wt1 as the only exploratory variable: 
+
+```{r}
+#| echo: false
+model1 <- lm(Wt24 ~ Wt1, data = data)
+summary(model1)
+```
+
+This model has an intercept of 4.8 and for every one-kilogram increase in 1 month weight, 24 month weight increases by 1.8. The R-squared (0.419) and adjusted R-squared (0.413) are both quite low, implying that this model is rather poor at predicting weight at 24 months. However, the p-value for Wt1 is quite low, meaning it is a significant predictor of Wt24.
+
+Next, we check model assumptions: 
+
+```{r}
+#| echo: false
+par(mfrow = c(2, 2))
+plot(model1)
+par(mfrow = c(1, 1))
+```
+
+The fitted values versus residuals show evenly scattered points centered on 0, meaning linearity is met. For the QQ-plot, the residuals mostly fit on the line, supporting normality of the errors. The scale location shows roughly constant spread of residuals across the fitted values, lining up with homoscedasticity. For the residuals vs leverage, no observation has high leverage so the model is not affected by outliers.
+
+ 
+
+Secondly, we create three linear models, all with Wt24 as the response variable, and: 
+
+-   One with Wt1 and sex as the explanatory variables. 
+-   One with Wt1 and solids as the explanatory variables. 
+-   One with Wt1, sex and solids as the explanatory variables. 
+
+The summary of the first model (Wt1 and sex) is: 
+
+```{r}
+#| echo: false
+model2  <- lm(Wt24 ~ Wt1 + Sex, data = data)
+summary(model2)
+```
+
+This model has an intercept of 5.2, for every one-kilogram increase in 1 month weight, 24-month weight increases by 1.6 and if the baby is male, their weight at 24 months will be 0.53g higher. The R-squared (0.444) and adjusted R-squared (0.434). Both Wt1 and sex have low p-values, implying they are important predictors of Wt24.
+
+Next, we check model assumptions: 
+
+```{r}
+#| echo: false
+par(mfrow = c(2, 2))
+plot(model2)
+par(mfrow = c(1, 1))
+```
+
+The fitted values versus residuals show evenly scattered points centered on 0, meaning linearity is met. For the QQ-plot, the residuals mostly fit on the line, supporting normality of the errors. The scale location shows roughly constant spread of residuals across the fitted values, lining up with homoscedasticity. For the residuals vs leverage, a small number of observations have high leverage so the model might be slightly affected by outliers.
+
+The summary of the second model (Wt1 and solids) is: 
+
+```{r}
+#| echo: false
+model3  <- lm(Wt24 ~ Wt1 + Solids, data = data)
+summary(model3)
+```
+
+This model has an intercept of 5.5, for every one-kilogram increase in 1 month weight, 24-month weight increases by 1.8 and for every one-month increase in the age at which the baby starts eating solids, their weight at 24 months decreases by -0.04. The R-squared (0.426) and adjusted R-squared (0.416). While Wt1 has a high p-value, implying it is a significant predictor of Wt24, solids does not.
+
+Next, we check model assumptions: 
+
+```{r}
+#| echo: false
+par(mfrow = c(2, 2))
+plot(model3)
+par(mfrow = c(1, 1))
+```
+
+The fitted values versus residuals show evenly scattered points centered on 0, meaning linearity is met. For the QQ-plot, the residuals mostly fit on the line, supporting normality of the errors. The scale location shows roughly constant spread of residuals across the fitted values, lining up with homoscedasticity. For the residuals vs leverage, some observations have high leverage so the model is slightly affected by outliers.
+
+The summary of the second model (Wt1, sex and solids) is: 
+
+```{r}
+#| echo: false
+model4 <- lm(Wt24 ~ Wt1 + Sex + Solids, data = data)
+summary(model4)
+```
+
+This model has an intercept of 6.0, for every one-kilogram increase in 1 month weight, 24-month weight increases by 1.6, if the baby is male, their weight at 24 months will be 0.56kg higher and for every one-month increase in the age at which the baby starts eating solids, their weight at 24 months decreases by -0.05. The R-squared (0.453) and adjusted R-squared (0.439). However, the p-value for solids is 0.17, implying it is not statistically significant to the model. 
+
+Next, we check model assumptions: 
+
+```{r}
+#| echo: false
+par(mfrow = c(2, 2))
+plot(model4)
+par(mfrow = c(1, 1))
+```
+
+The fitted values versus residuals show evenly scattered points centered on 0, meaning linearity is met. For the QQ-plot, the residuals mostly fit on the line, supporting normality of the errors. The scale location shows roughly constant spread of residuals across the fitted values, lining up with homoscedasticity. For the residuals vs leverage, no observation has high leverage so the model is not affected by outliers.
+
+To compare the four models, we will look at the adjusted R-squared and AIC output below: 
+
+```{r}
+#| echo: false
+model1 <- lm(Wt24 ~ Wt1, data = data)
+model2 <- lm(Wt24 ~ Wt1 + Sex, data = data)
+model3 <- lm(Wt24 ~ Wt1 + Solids, data = data)
+model4 <- lm(Wt24 ~ Wt1 + Sex + Solids, data = data)
+AIC(model1, model2, model3, model4)
+```
+
+As you can see, model 2 is best as it has the lowest AIC and the highest adjusted R-squared, sitting at 0.43. However, this still means that over 50% of the variation in the data is not explained by the model which means it's not very good at predicting Wt24. 
+
+ 
+
+Thirdly, to figure out if there is a difference in the average change in weights from 1 month to 24 months between male and female babies, we use a Welch two sample t-test: 
+
+```{r}
+#| echo: false
+data$Wt_Diff <- data$Wt24 - data$Wt1
+t_test_results <- t.test(Wt_Diff ~ Sex, data = data)
+t_test_results
+```
+
+The p-value is 0.00126 and the 95% confidence interval is \[-1.253409, -0.316023\], these both imply a statistically significant difference in the average change in weights between male and female babies as the p-value is low and the confidence interval does not contain 0. On average male babies are 0.78kg heavier, which lines up with earlier findings that sex is a significant predictor of Wt24.
+
+## Conclusions:
+
+\| **Q1** \| Wt1 is a significant but moderate predictor of Wt24 (R² = 0.42). A 1 kg increase in Wt1 predicts a 1.80 kg increase in Wt24.
+
+**\|Q2** \| Adding **Sex** significantly improves the model (AIC ↓ 3, adj. R² ↑ to 0.434, *p* = 0.028). Adding **Solids** adds no improvement (*p* = 0.238). Best model: Wt24 \~ Wt1 + Sex. \|
+
+\| **Q3** \| Male babies gain on average **0.785 kg more** than female babies (*t* = −3.32, *p* = 0.0013, 95% CI \[0.316, 1.253\] kg). The difference is statistically significant.
+
+A recommendation to improve this study is too consider more variables, such as whether the baby has suffered any serious health complications or the economic status of the parents. This would lead to more comprehensive and complete models.
